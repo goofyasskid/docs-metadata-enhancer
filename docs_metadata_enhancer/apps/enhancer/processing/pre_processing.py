@@ -1,0 +1,107 @@
+
+import logging
+import os
+import re
+
+import nltk
+from nltk.corpus import stopwords
+
+from langchain.text_splitter import CharacterTextSplitter, TextSplitter
+
+
+def clean_text(text):
+    """
+    Clean text from PDF artifacts
+    Args:
+        text (str): Raw text from PDF
+    Returns:
+        str: Cleaned text
+    """
+    # Удаление лишних переносов строк и пробелов
+    text = re.sub(r'\n\s*\n', '\n', text)  # Удаление пустых строк
+    text = re.sub(r'\s+', ' ', text)  # Замена множественных пробелов одним
+
+    return text.strip()
+
+# def split_text(text, chunk_size=2000, chunk_overlap=200):
+#     """
+#     Split text into chunks for processing
+#     Args:
+#         text (str): Text to split
+#         chunk_size (int): Size of each chunk
+#         chunk_overlap (int): Overlap between chunks
+#     Returns:
+#         list: List of text chunks
+#     """
+#     splitter = CharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+#     return splitter.split_text(text)
+
+def split_text(text, chunk_size=4000, chunk_overlap=200):
+    """
+    Split text into chunks for processing
+    Args:
+        text (str): Text to split
+        chunk_size (int): Size of each chunk
+        chunk_overlap (int): Overlap between chunks
+    Returns:
+        list: List of text chunks
+    """
+    try:
+        text_splitter= CharacterTextSplitter(
+            separator=" ", 
+            chunk_size=chunk_size, 
+            chunk_overlap=chunk_overlap, 
+        )
+        chunks= text_splitter.split_text(text)
+        print(f"Created {len(chunks)} chunks")
+        for i, chunk in enumerate(chunks):
+            print(f"Chunk {i+1} length: {len(chunk)} characters")
+        return chunks
+    
+    except Exception as e:
+        print(f"Error splitting text: {e}")
+        # Ручное разбиение как запасной вариант
+        raise
+    
+# Инициализация NLTK один раз при запуске
+def init_nltk():
+    """
+    Инициализирует NLTK, загружая необходимые данные.
+    """
+    try:
+        # Указываем путь для NLTK-данных (локально и для сервера)
+        nltk_data_path = os.getenv("NLTK_DATA", "./nltk_data")
+        os.makedirs(nltk_data_path, exist_ok=True)
+        nltk.data.path.append(nltk_data_path)
+        
+        # Проверяем наличие данных
+        required_datasets = ['stopwords']
+        for dataset in required_datasets:
+            try:
+                resource_path ='corpora/{dataset}'
+                nltk.data.find(nltk_data_path)
+                logging.info(f"NLTK dataset '{dataset}' already exists")
+            except LookupError:
+                logging.info(f"Downloading NLTK dataset '{dataset}' to {nltk_data_path}")
+                nltk.download(dataset, download_dir=nltk_data_path, quiet=True)
+    except Exception as e:
+        logging.error(f"Ошибка инициализации NLTK: {e}")
+        raise
+        
+def remove_stopwords(text):
+    """
+    Remove stopwords from text to reduce token count
+    Args:
+        text (str): Input text
+    Returns:
+        str: Text with stopwords removed
+    """
+    init_nltk()
+    stop_words_ru = set(stopwords.words('russian'))
+    stop_words_en = set(stopwords.words('english'))
+    stop_words = stop_words_ru.union(stop_words_en)
+    # Разбиваем текст на слова
+    words = text.split()
+    # Удаляем стоп-слова, сохраняя структуру
+    filtered_words = [word for word in words if word.lower() not in stop_words]
+    return ' '.join(filtered_words)

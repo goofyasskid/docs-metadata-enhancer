@@ -1,0 +1,39 @@
+{%  extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="content-section mt-3">
+    <div class="container p-0" >
+        <div class="row d-flex justify-content-start">
+            <div class="col-md-3 d-flex flex-column p-0">
+              {% include "profile_info_sidebar.html" with active='favorites'%}
+            </div>
+            <div class="col-md-8" >
+                <h2 class="mb-3">Моё обучение</h2>
+                {%include 'profile_tabs.html' with active='favorites'%}
+                <div class="d-flex flex-row justify-content-start flex-wrap" >
+                {%if courses%}
+                  {%for course in courses%}
+                    {%if course.course.is_available%}
+                  <div class="d-flex flex-column justify-content-start mt-3 ms-5" style="max-width: 230px;">
+                    <img src="{{course.course.image.url}}" style="max-width: 230px;" height="130" class="rounded-3" alt="Course Cover Image">
+                    <p class="fs-5 fw-bold mt-1 mb-0"><a href="{%url 'courses:index' course.course.id%}" class="text-decoration-none">{{course.course.title}}</a></p>
+                    <p class="fs-7 text-secondary mt-0">
+                      {{course.course.author.first_name}} {{course.course.author.last_name}} 
+                      <a href="{%url 'courses:course_from_favorite' course.course.id%}" class="btn btn-sm btn-outline-dark" >Удалить из избранного</a>
+                    </p>  
+                  </div>
+                    {%endif%}
+                  {%endfor%}
+                  {%else%}
+                  <p class="mb-3 fs-5">Ваш список пуст.</з>
+                  <p>
+                      <a href="{%url 'courses:course_market' %}" class="fs-5">Вернуться к поиску</a>
+                  </p>
+                  {%endif%}
+                </div>
+                  </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

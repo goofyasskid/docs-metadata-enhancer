@@ -1,0 +1,81 @@
+# Python и виртуальное окружение
+venv/
+env/
+.venv/
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Django
+*.log
+*.pot
+*.pyc
+local_settings.py
+settings.py.local
+*.sqlite3
+*.db
+# media/
+
+# Секреты и окружение
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+secrets.json
+
+# Статические файлы (если collectstatic используется)
+staticfiles/
+
+# Временные файлы и кэши
+*.bak
+*.swp
+*~
+.cache/
+.coverage
+.coverage.*
+.tox/
+.nox/
+.pytest_cache/
+.hypothesis/
+.dmypy.json
+.mypy_cache/
+.ruff_cache/
+
+# IDE и редакторы
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Документация и сборки
+build/
+dist/
+*.egg
+*.egg-info/
+wheels/
+*.whl
+
+# Тестирование и отчёты
+htmlcov/
+coverage.xml
+*.xml
+*.lcov
+*.prof
+
+# Другие
+*.tmp
+*.temp
+temp_*.pdf

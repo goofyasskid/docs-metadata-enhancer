@@ -1,0 +1,9 @@
+{% autoescape off %}
+
+Привет, {{ user.username }}!
+Чтобы завершить регистрацию в Tasks Manager System, пожалуйста, перейдите по ссылке ниже.
+http://{{ domain }}{% url 'accounts:activate' uidb64=uid token=token %}
+
+Если вы не делали этого запроса, вы можете просто проигнорировать это письмо.
+
+{% endautoescape %}

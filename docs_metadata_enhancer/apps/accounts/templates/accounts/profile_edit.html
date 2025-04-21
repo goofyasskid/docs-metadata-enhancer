@@ -1,0 +1,34 @@
+{%  extends 'base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="content-section">
+    <div class="media" style="display: flex; flex-direction: column; align-items: center;">
+        <img class="rounded-circle account-img" src="{{ user.image.url }}" width="150" height="150">
+        <div class="media-body">
+            {% if user.first_name%}
+            <h2 class="account-heading">Привет, <strong>{{ user.first_name }}</strong> </h2>
+            {%else%}
+            <h2 class="account-heading">Заполните ваши личные данные</h2>
+            {%endif%}
+        </div>  
+    </div> 
+    <div class="container" >
+        <div class="row d-flex justify-content-center">
+            <div class="col-md-6" >
+                <form method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <fieldset class="form-group align-content-center">
+                        <legend class="border-bottom mb-4"></legend>
+                        {{ form|crispy }}
+                    </fieldset>
+            </div>
+
+                <div class="form-group" style="display: flex; flex-direction: column; align-items: center;">
+                    <button class="w-50 btn btn-lg btn-primary mt-3" type="submit">Обновить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
