@@ -1,0 +1,296 @@
+<!-- Модальное окно создания папки -->
+<div class="modal fade" id="createFolderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Создать новую папку</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'enhancer:create_folder' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="folderName" class="form-label">Название папки</label>
+                        <input type="text" class="form-control" id="folderName" name="name" required>
+                    </div>
+                    {% if current_folder %}
+                    <input type="hidden" name="parent_id" value="{{ current_folder.id }}">
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Создать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно загрузки файла -->
+<div class="modal fade" id="uploadFileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Загрузить файл</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'enhancer:upload_file' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="fileName" class="form-label">Название файла</label>
+                        <input type="text" class="form-control" id="fileName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="fileUpload" class="form-label">Выберите файл</label>
+                        <input type="file" class="form-control" id="fileUpload" name="file" required>
+                    </div>
+                    {% if current_folder %}
+                    <input type="hidden" name="folder_id" value="{{ current_folder.id }}">
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Загрузить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно удаления папки -->
+<div class="modal fade" id="deleteFolderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Удалить папку</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить папку "<span id="folderNameToDelete"></span>"?</p>
+                <p class="text-danger">Это действие нельзя отменить!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="post" action="{% url 'enhancer:delete_folder' %}" id="deleteFolderForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="folder_id" id="folderIdToDelete">
+                    <button type="submit" class="btn btn-danger">Удалить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно переименования папки -->
+<div class="modal fade" id="renameFolderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Переименовать папку</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'enhancer:rename_folder' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newFolderName" class="form-label">Новое название папки</label>
+                        <input type="text" class="form-control" id="newFolderName" name="name" required>
+                    </div>
+                    <input type="hidden" name="folder_id" id="renameFolderId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Переименовать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для переименования документа -->
+<div class="modal fade" id="renameDocumentModal" tabindex="-1" aria-labelledby="renameDocumentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="renameDocumentModalLabel">Переименовать документ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="" method="post" id="renameDocumentForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="newDocumentName" class="form-label">Новое название</label>
+                        <input type="text" class="form-control" id="newDocumentName" name="name" required>
+                        <input type="hidden" id="renameDocumentId" name="document_id">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Переименовать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для удаления документа -->
+<div class="modal fade" id="deleteDocumentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Удалить документ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Вы уверены, что хотите удалить документ "<span id="documentNameToDelete"></span>"?</p>
+                <p class="text-danger">Это действие нельзя отменить!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="post" id="deleteDocumentForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Удалить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно экспорта документа -->
+<div class="modal fade" id="exportDocumentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Экспорт документа</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="exportDocumentForm" action="">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Формат метаданных</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="metadata_format" id="formatJson" value="json" checked>
+                            <label class="form-check-label" for="formatJson">
+                                JSON (более компактный)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="metadata_format" id="formatXml" value="xml">
+                            <label class="form-check-label" for="formatXml">
+                                XML (более структурированный)
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Включить данные Wikidata</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="include_wikidata" id="includeWikidata" value="1" checked>
+                            <label class="form-check-label" for="includeWikidata">
+                                Добавить информацию из Wikidata к метаданным
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            Добавляет дополнительную информацию о связанных сущностях: описания, свойства и метки.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Экспортировать как</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="export_type" id="exportTypeZip" value="zip" checked>
+                            <label class="form-check-label" for="exportTypeZip">
+                                ZIP-архив (документ + метаданные)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="export_type" id="exportTypeMetadataOnly" value="metadata_only">
+                            <label class="form-check-label" for="exportTypeMetadataOnly">
+                                Только метаданные
+                            </label>
+                        </div>
+                        <!-- {% if document.file_type == 'pdf' %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="export_type" id="exportTypePdfEmbedded" value="pdf_embedded">
+                            <label class="form-check-label" for="exportTypePdfEmbedded">
+                                PDF со встроенными метаданными
+                            </label>
+                        </div> -->
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Экспортировать</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработка модального окна удаления папки
+    const deleteFolderModal = document.getElementById('deleteFolderModal');
+    if (deleteFolderModal) {
+        deleteFolderModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const folderId = button.getAttribute('data-folder-id');
+            const folderName = button.getAttribute('data-folder-name');
+            
+            document.getElementById('folderNameToDelete').textContent = folderName;
+            document.getElementById('folderIdToDelete').value = folderId;
+        });
+    }
+    
+    // Обработчики для модальных окон при закрытии
+    const modals = ['createFolderModal', 'uploadFileModal', 'deleteFolderModal', 'renameFolderModal', 'renameDocumentModal', 'deleteDocumentModal'];
+    
+    modals.forEach(modalId => {
+        const modalElement = document.getElementById(modalId);
+        if (modalElement) {
+            // Обработчик для кнопки закрытия и кнопки "Отмена"
+            const closeButtons = modalElement.querySelectorAll('[data-bs-dismiss="modal"]');
+            closeButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Используем таймаут, чтобы дать Bootstrap выполнить свои действия
+                    setTimeout(function() {
+                        // Проверяем, остались ли элементы модального окна
+                        if (document.body.classList.contains('modal-open')) {
+                            document.body.classList.remove('modal-open');
+                            document.body.style.overflow = '';
+                            document.body.style.paddingRight = '';
+                        }
+                        
+                        const backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) {
+                            backdrop.remove();
+                        }
+                    }, 300);
+                });
+            });
+            
+            // Обработчик события полного закрытия модального окна
+            modalElement.addEventListener('hidden.bs.modal', function() {
+                // Проверяем, остались ли элементы модального окна
+                setTimeout(function() {
+                    if (document.body.classList.contains('modal-open')) {
+                        document.body.classList.remove('modal-open');
+                        document.body.style.overflow = '';
+                        document.body.style.paddingRight = '';
+                    }
+                    
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) {
+                        backdrop.remove();
+                    }
+                }, 300);
+            });
+        }
+    });
+});
+</script>
+{% endblock %} 

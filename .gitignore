@@ -1,4 +1,5 @@
 # Python и виртуальное окружение
+media/docs/*
 venv/
 env/
 .venv/

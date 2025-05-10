@@ -1,37 +1,450 @@
-{% extends 'base.html' %}
-
-{% block title %}Загрузка и обработка PDF{% endblock %}
+{% extends "base.html" %}
+{% load static %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-6">
-        <h2>Загрузить PDF</h2>
-        <form method="post" enctype="multipart/form-data" class="mb-4">
-            {% csrf_token %}
-            <div class="mb-3">
-                <label for="pdf_file" class="form-label">Выберите PDF-файл</label>
-                <input type="file" class="form-control" id="pdf_file" name="pdf_file" accept=".pdf" required>
+<div class="container w-100 p-0 m-0 mw-100">
+    <div class="row w-100 p-0 m-0">
+        <!-- Сайдбар -->
+        <div class="col-md-2 d-md-block bg-light sidebar" style="max-height: 300px; min-height: 300px;">
+            {% include "enhancer/includes/sidebar.html" %}
+        </div>
+
+        <!-- Основной контент -->
+        <main class="col-md-10 px-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Файловая система</h1>
+                <div class="btn-toolbar mb-2 mb-md-0">
+                    <div class="btn-group me-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#createFolderModal">
+                            <i class="bi bi-folder-plus"></i> Создать папку
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#uploadFileModal">
+                            <i class="bi bi-upload"></i> Загрузить файл
+                        </button>
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary">Обработать</button>
-        </form>
+
+            <!-- Хлебные крошки -->
+            {% include "enhancer/includes/breadcrumbs.html" %}
+            
+            <!-- Индикатор загрузки и обработки документа -->
+            <div id="uploadProgressContainer" class="alert alert-info d-none mb-3">
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Загрузка...</span>
+                    </div>
+                    <div id="uploadStatusText">Загрузка документа...</div>
+                </div>
+                <div class="progress mt-2">
+                    <div id="uploadProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+
+            <!-- Контекстное меню для папок -->
+            <div class="context-menu" id="folderContextMenu">
+                <div class="context-menu-item" data-action="rename">
+                    <i class="bi bi-pencil"></i> Переименовать
+                </div>
+                <div class="context-menu-item" data-action="delete">
+                    <i class="bi bi-trash"></i> Удалить
+                </div>
+            </div>
+            
+            <!-- Контекстное меню для документов -->
+            <div class="context-menu" id="documentContextMenu">
+                <div class="context-menu-item" data-action="open">
+                    <i class="bi bi-file-earmark-text"></i> Открыть
+                </div>
+                <div class="context-menu-item" data-action="download">
+                    <i class="bi bi-download"></i> Скачать
+                </div>
+                <div class="context-menu-item" data-action="rename">
+                    <i class="bi bi-pencil"></i> Переименовать
+                </div>
+                <div class="context-menu-item" data-action="delete">
+                    <i class="bi bi-trash"></i> Удалить
+                </div>
+            </div>
+
+            <!-- Контейнер для файлов и папок -->
+            <div class="row g-4 mt-3">
+                {% for folder in folders %}
+                <div class="col-md-2">
+                    <div class="folder-item text-center" 
+                         data-folder-id="{{ folder.id }}"
+                         data-folder-name="{{ folder.name }}"
+                         data-folder-url="{% url 'enhancer:folder_detail' folder.id %}"
+                         data-context-type="folder">
+                        <img src="{% static 'folder-image.png' %}" alt="Папка" class="img-fluid mb-2">
+                        <div class="folder-name">{{ folder.name }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+                
+                {% for document in documents %}
+                <div class="col-md-2">
+                    <div class="document-item text-center"
+                         data-document-id="{{ document.id }}"
+                         data-document-name="{{ document.name }}"
+                         data-document-type="{{ document.file_type }}"
+                         data-document-url="{% url 'enhancer:document_detail' document.id %}"
+                         data-context-type="document"
+                         {% if document.processing_status == 'processing' %}data-processing="true"{% endif %}>
+                        {% if document.file_type == 'pdf' %}
+                            <img src="{% static 'pdf-image.png' %}" alt="PDF" class="img-fluid mb-2">
+                        {% elif document.file_type == 'docx' %}
+                            <img src="{% static 'docx-image.png' %}" alt="DOCX" class="img-fluid mb-2">
+                        {% elif document.file_type == 'doc' %}
+                            <img src="{% static 'docx-image.png' %}" alt="DOC" class="img-fluid mb-2">
+                        {% elif document.file_type == 'txt' %}
+                            <img src="{% static 'txt-image.png' %}" alt="TXT" class="img-fluid mb-2">
+                        {% elif document.file_type == 'rtf' %}
+                            <img src="{% static 'txt-image.png' %}" alt="RTF" class="img-fluid mb-2">
+                        {% else %}
+                            <img src="{% static 'txt-image.png' %}" alt="Документ" class="img-fluid mb-2">
+                        {% endif %}
+                        <div class="document-name" title="{{ document.name }}.{{ document.file_type }}">
+                            {% with name=document.name|truncatechars:15 %}
+                            {{ name }}{% if name|length == 15 %}...{% endif %}.{{ document.file_type }}
+                            {% endwith %}
+                        </div>
+                        {% if document.processing_status == 'processing' %}
+                        <div class="mt-1">
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-hourglass-split"></i> Обработка
+                            </span>
+                        </div>
+                        {% elif document.processing_status == 'failed' %}
+                        <div class="mt-1">
+                            <span class="badge bg-danger">
+                                <i class="bi bi-exclamation-triangle"></i> Ошибка
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
     </div>
 </div>
 
-{% if result %}
-<div class="row">
-    <div class="col-md-12">
-        <h2>Результат обработки</h2>
-        <div class="card">
-            <div class="card-header">
-                Метаданные документа
+<!-- Модальные окна -->
+{% include "enhancer/includes/modals.html" %}
+
+{% block extra_css %}
+<style>
+.folder-item, .document-item {
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 5px;
+    transition: background-color 0.2s;
+    position: relative;
+}
+
+.folder-item:hover, .document-item:hover {
+    background-color: #f8f9fa;
+}
+
+.folder-name, .document-name {
+    word-break: break-word;
+    font-size: 0.9rem;
+}
+
+/* Стили для изображений папок и файлов */
+.folder-item img, .document-item img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+}
+
+.context-menu {
+    display: none;
+    position: fixed;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 1000;
+}
+
+.context-menu-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.context-menu-item:hover {
+    background-color: #f8f9fa;
+}
+
+.context-menu-item i {
+    margin-right: 8px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showContextMenu(event, element, type) {
+    event.preventDefault();
+    
+    // Определяем, какое контекстное меню показывать
+    const contextMenuId = type === 'document' ? 'documentContextMenu' : 'folderContextMenu';
+    const contextMenu = document.getElementById(contextMenuId);
+    
+    // Скрываем все контекстные меню перед показом нужного
+    document.querySelectorAll('.context-menu').forEach(menu => {
+        menu.style.display = 'none';
+    });
+    
+    // Показываем нужное контекстное меню
+    contextMenu.style.display = 'block';
+    contextMenu.style.left = event.pageX + 'px';
+    contextMenu.style.top = event.pageY + 'px';
+    
+    // Сохраняем данные в контекстном меню
+    if (type === 'folder') {
+        contextMenu.dataset.folderId = element.dataset.folderId;
+        contextMenu.dataset.folderName = element.dataset.folderName;
+    } else if (type === 'document') {
+        contextMenu.dataset.documentId = element.dataset.documentId;
+        contextMenu.dataset.documentName = element.dataset.documentName;
+        contextMenu.dataset.documentType = element.dataset.documentType;
+    }
+}
+
+// Закрываем контекстное меню при клике вне его
+document.addEventListener('click', function(event) {
+    document.querySelectorAll('.context-menu').forEach(menu => {
+        if (!menu.contains(event.target)) {
+            menu.style.display = 'none';
+        }
+    });
+});
+
+// Обработка действий контекстного меню папок
+document.querySelector('#folderContextMenu').addEventListener('click', function(event) {
+    const menuItem = event.target.closest('.context-menu-item');
+    if (!menuItem) return;
+    
+    const action = menuItem.dataset.action;
+    const folderId = this.dataset.folderId;
+    const folderName = this.dataset.folderName;
+    
+    if (action === 'delete') {
+        // Показываем модальное окно удаления
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteFolderModal'));
+        document.getElementById('folderNameToDelete').textContent = folderName;
+        document.getElementById('folderIdToDelete').value = folderId;
+        deleteModal.show();
+    } else if (action === 'rename') {
+        // Показываем модальное окно переименования
+        const renameModal = new bootstrap.Modal(document.getElementById('renameFolderModal'));
+        document.getElementById('renameFolderId').value = folderId;
+        document.getElementById('newFolderName').value = folderName;
+        renameModal.show();
+    }
+    
+    this.style.display = 'none';
+});
+
+// Функция для корректного закрытия модальных окон
+function closeModalProperly(modalId) {
+    const modalElement = document.getElementById(modalId);
+    if (modalElement) {
+        const modalInstance = bootstrap.Modal.getInstance(modalElement);
+        if (modalInstance) {
+            modalInstance.hide();
+        }
+        
+        // Убираем класс modal-open с body
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Удаляем backdrop, если он есть
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) {
+            backdrop.remove();
+        }
+    }
+}
+
+// Обработка контекстного меню документов
+document.querySelector('#documentContextMenu').addEventListener('click', function(event) {
+    const menuItem = event.target.closest('.context-menu-item');
+    if (!menuItem) return;
+    
+    const action = menuItem.dataset.action;
+    const documentId = this.dataset.documentId;
+    const documentName = this.dataset.documentName;
+    const documentType = this.dataset.documentType;
+    
+    if (action === 'open') {
+        // Открываем документ
+        window.location.href = `/document/${documentId}/`;
+    } else if (action === 'download') {
+        // Скачиваем документ
+        window.location.href = `/document/${documentId}/download/`;
+    } else if (action === 'rename') {
+        // Показываем модальное окно переименования
+        const renameModal = new bootstrap.Modal(document.getElementById('renameDocumentModal'));
+        document.getElementById('renameDocumentId').value = documentId;
+        document.getElementById('newDocumentName').value = documentName;
+        
+        // Обновляем URL формы для обычного POST-запроса
+        document.getElementById('renameDocumentForm').action = `/document/${documentId}/rename/`;
+        
+        renameModal.show();
+    } else if (action === 'delete') {
+        // Показываем модальное окно удаления документа
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteDocumentModal'));
+        document.getElementById('documentNameToDelete').textContent = `${documentName}.${documentType}`;
+        
+        // Настраиваем форму для стандартного POST-запроса
+        const deleteForm = document.getElementById('deleteDocumentForm');
+        deleteForm.action = `/document/${documentId}/delete/`;
+        
+        deleteModal.show();
+    }
+    
+    this.style.display = 'none';
+});
+
+// Функция для показа уведомлений
+function showToast(message, type = 'info') {
+    // Проверяем, есть ли контейнер для уведомлений
+    let toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        // Создаем контейнер, если его нет
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toast-container';
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Создаем уникальный ID для уведомления
+    const toastId = 'toast-' + new Date().getTime();
+    
+    // Создаем HTML для уведомления
+    const toastHTML = `
+        <div id="${toastId}" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <span class="bg-${type} rounded me-2" style="width: 20px; height: 20px;"></span>
+                <strong class="me-auto">Уведомление</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
-            <div class="card-body">
-                <pre class="bg-light p-3" style="max-height: 500px; overflow-y: auto;">
-{{ result|safe }}
-                </pre>
+            <div class="toast-body">
+                ${message}
             </div>
         </div>
-    </div>
-</div>
-{% endif %}
+    `;
+    
+    // Добавляем уведомление в контейнер
+    toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+    
+    // Инициализируем уведомление
+    const toastElement = document.getElementById(toastId);
+    const toast = new bootstrap.Toast(toastElement, {
+        autohide: true,
+        delay: 5000
+    });
+    
+    // Показываем уведомление
+    toast.show();
+    
+    // Удаляем уведомление после скрытия
+    toastElement.addEventListener('hidden.bs.toast', function() {
+        toastElement.remove();
+    });
+}
+
+// Индикация загрузки и обработки документов
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработка двойного клика по элементам
+    document.querySelectorAll('.folder-item, .document-item').forEach(item => {
+        // Двойной клик - открытие элемента
+        item.addEventListener('dblclick', function() {
+            const url = item.dataset.folderUrl || item.dataset.documentUrl;
+            if (url) {
+                window.location.href = url;
+            }
+        });
+        
+        // Контекстное меню
+        item.addEventListener('contextmenu', function(event) {
+            event.preventDefault();
+            const contextType = item.dataset.contextType;
+            showContextMenu(event, item, contextType);
+        });
+    });
+    
+    // Назначаем ID форме загрузки файла в модальном окне
+    const uploadFormModal = document.querySelector('#uploadFileModal form');
+    if (uploadFormModal) {
+        uploadFormModal.id = 'uploadFileForm';
+    }
+    
+    const uploadForm = document.getElementById('uploadFileForm');
+    const uploadProgressContainer = document.getElementById('uploadProgressContainer');
+    const uploadProgressBar = document.getElementById('uploadProgressBar');
+    const uploadStatusText = document.getElementById('uploadStatusText');
+    
+    console.log('Форма загрузки файла:', uploadForm); // Отладочный вывод
+    
+    if (uploadForm) {
+        uploadForm.addEventListener('submit', function(e) {
+            console.log('Форма отправлена!'); // Отладочный вывод
+            
+            const fileInput = uploadForm.querySelector('input[type="file"]');
+            if (fileInput.files.length === 0) {
+                console.log('Файл не выбран!'); // Отладочный вывод
+                return; // Пропускаем, если файл не выбран
+            }
+            
+            // Закрываем модальное окно
+            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadFileModal'));
+            if (modal) {
+                modal.hide();
+            }
+            
+            // Показываем индикатор загрузки
+            uploadProgressContainer.classList.remove('d-none');
+            uploadStatusText.textContent = 'Загрузка документа...';
+            
+            // Симулируем прогресс загрузки
+            let progress = 0;
+            const interval = setInterval(function() {
+                progress += 5;
+                if (progress <= 90) { // Доходим только до 90%, оставшиеся 10% - для обработки на сервере
+                    uploadProgressBar.style.width = progress + '%';
+                    uploadProgressBar.setAttribute('aria-valuenow', progress);
+                }
+                
+                if (progress === 50) {
+                    uploadStatusText.textContent = 'Загрузка документа... Анализ содержимого';
+                }
+                
+                if (progress >= 90) {
+                    clearInterval(interval);
+                    uploadStatusText.textContent = 'Документ загружен, выполняется обработка...';
+                }
+            }, 200);
+        });
+    }
+    
+    // Проверяем наличие документов в процессе обработки
+    const processingDocuments = document.querySelectorAll('.document-item .badge.bg-warning');
+    if (processingDocuments.length > 0) {
+        // Запускаем проверку статуса обработки каждые 5 секунд
+        setInterval(function() {
+            // Здесь можно добавить AJAX-запрос для проверки статуса обработки документов
+            // и обновления индикаторов на странице без перезагрузки
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}
 {% endblock %}

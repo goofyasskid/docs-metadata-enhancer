@@ -1,0 +1,189 @@
+{% if message %}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
+
+{% if entities_by_category %}
+<ul class="nav nav-tabs" id="wikidata-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" 
+                id="tab-all" 
+                data-bs-toggle="tab" 
+                data-bs-target="#pane-all" 
+                data-category="all"
+                type="button" 
+                role="tab" 
+                aria-controls="pane-all" 
+                aria-selected="true">
+            Все сущности <span class="badge bg-primary rounded-pill">{{ document.entity_relations.count }}</span>
+        </button>
+    </li>
+    {% for category, entities in entities_by_category.items %}
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" 
+                id="tab-{{ category }}" 
+                data-bs-toggle="tab" 
+                data-bs-target="#pane-{{ category }}" 
+                data-category="{{ category }}"
+                type="button" 
+                role="tab" 
+                aria-controls="pane-{{ category }}" 
+                aria-selected="false">
+            {{ category|title }} <span class="badge bg-primary rounded-pill">{{ entities|length }}</span>
+        </button>
+    </li>
+    {% endfor %}
+</ul>
+<div class="tab-content" id="wikidata-tab-content">
+    <!-- Вкладка со всеми сущностями -->
+    <div class="tab-pane fade show active" 
+         id="pane-all" 
+         role="tabpanel" 
+         aria-labelledby="tab-all"
+         data-category="all">
+        
+        <div class="list-group mt-3">
+            {% for category, entities in entities_by_category.items %}
+                {% if not forloop.first %}<div class="mt-3"></div>{% endif %}
+                <div class="card mb-3">
+                    <div class="card-header bg-light text-dark fw-bold">
+                        {{ category|title }} <span class="badge bg-secondary">{{ entities|length }}</span>
+                    </div>
+                    <div class="card-body p-0">
+                        {% for relation in entities %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1 wikidata-entity-link" data-qid="{{ relation.entity.qid }}">
+                                        {{ relation.entity.label_ru|default:relation.entity.label_en|default:relation.entity.qid }}
+                                    </h6>
+                                    <div>
+                                        <a href="https://www.wikidata.org/wiki/{{ relation.entity.qid }}" 
+                                           target="_blank" 
+                                           class="text-primary text-decoration-none">
+                                            {{ relation.entity.qid }} <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-danger py-0 px-1 ms-2 unlink-entity-btn" 
+                                                data-entity-id="{{ relation.entity.qid }}" 
+                                                data-relation-id="{{ relation.id }}" 
+                                                data-category="{{ relation.field_category }}"
+                                                data-field-key="{{ relation.field_key }}"
+                                                data-field-value="{{ relation.field_value }}"
+                                                title="Удалить связь">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                {% if relation.field_key or relation.field_value %}
+                                <div class="mt-1 mb-2">
+                                    {% if relation.field_key %}
+                                    <span class="badge bg-info">{{ relation.field_key }}</span>
+                                    {% endif %}
+                                    {% if relation.field_value %}
+                                    <span class="badge bg-light text-dark">{{ relation.field_value }}</span>
+                                    {% endif %}
+                                    {% if relation.confidence and relation.confidence < 1.0 %}
+                                    <span class="badge bg-warning text-dark">Уверенность: {{ relation.confidence|floatformat:2 }}</span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                
+                                <div class="entity-description my-1">
+                                    {% if relation.entity.description_ru %}
+                                    <small class="text-muted d-block">{{ relation.entity.description_ru }}</small>
+                                    {% elif relation.entity.description_en %}
+                                    <small class="text-muted d-block">{{ relation.entity.description_en }}</small>
+                                    {% elif relation.context %}
+                                    <small class="text-muted d-block"><em>{{ relation.context|truncatechars:100 }}</em></small>
+                                    {% else %}
+                                    <small class="text-muted d-block fst-italic">Нет описания</small>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="d-flex justify-content-end">
+                                    <!-- Кнопки действий будут добавлены через JavaScript -->
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% for category, entities in entities_by_category.items %}
+    <div class="tab-pane fade" 
+         id="pane-{{ category }}" 
+         role="tabpanel" 
+         aria-labelledby="tab-{{ category }}"
+         data-category="{{ category }}">
+        
+        <div class="list-group mt-3">
+            {% for relation in entities %}
+            <div class="list-group-item">
+                <div class="d-flex w-100 justify-content-between">
+                    <h6 class="mb-1 wikidata-entity-link" data-qid="{{ relation.entity.qid }}">
+                        {{ relation.entity.label_ru|default:relation.entity.label_en|default:relation.entity.qid }}
+                    </h6>
+                    <div>
+                        <a href="https://www.wikidata.org/wiki/{{ relation.entity.qid }}" 
+                           target="_blank" 
+                           class="text-primary text-decoration-none">
+                            {{ relation.entity.qid }} <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                        <button type="button" 
+                                class="btn btn-sm btn-outline-danger py-0 px-1 ms-2 unlink-entity-btn" 
+                                data-entity-id="{{ relation.entity.qid }}" 
+                                data-relation-id="{{ relation.id }}" 
+                                data-category="{{ relation.field_category }}"
+                                data-field-key="{{ relation.field_key }}"
+                                data-field-value="{{ relation.field_value }}"
+                                title="Удалить связь">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                {% if relation.field_key or relation.field_value %}
+                <div class="mt-1 mb-2">
+                    {% if relation.field_key %}
+                    <span class="badge bg-info">{{ relation.field_key }}</span>
+                    {% endif %}
+                    {% if relation.field_value %}
+                    <span class="badge bg-light text-dark">{{ relation.field_value }}</span>
+                    {% endif %}
+                    {% if relation.confidence and relation.confidence < 1.0 %}
+                    <span class="badge bg-warning text-dark">Уверенность: {{ relation.confidence|floatformat:2 }}</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+                
+                <div class="entity-description my-1">
+                    {% if relation.entity.description_ru %}
+                    <small class="text-muted d-block">{{ relation.entity.description_ru }}</small>
+                    {% elif relation.entity.description_en %}
+                    <small class="text-muted d-block">{{ relation.entity.description_en }}</small>
+                    {% elif relation.context %}
+                    <small class="text-muted d-block"><em>{{ relation.context|truncatechars:100 }}</em></small>
+                    {% else %}
+                    <small class="text-muted d-block fst-italic">Нет описания</small>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex justify-content-end">
+                    <!-- Кнопки действий будут добавлены через JavaScript -->
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    У этого документа пока нет связей с сущностями Wikidata.
+</div>
+{% endif %} 

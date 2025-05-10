@@ -47,7 +47,10 @@ class SignupView(CreateView):
         user = form.save()
         user.is_active = False
         user.save()
-        send_account_email_confirmation(self.request, user)
+        try:
+            send_account_email_confirmation(self.request, user)
+        except Exception as e:
+            print(f"Error: {e}")
         return valid
 
     def get_success_url(self):
